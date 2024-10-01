@@ -14,21 +14,31 @@ const connectButton = document.getElementById('connectBleButton');
 const disconnectButton = document.getElementById('disconnectBleButton');
 const received_weight_value = document.getElementById('weight_value_label')
 const bleStateContainer = document.getElementById('bleState');
+const Calib_Button = document.getElementById('button_calib');
+const Hold_Button = document.getElementById('button_hold');
+const Unhold_Button = document.getElementById('button_unhold');
+
 
 var deviceName ='ESP32';
 var bleService = '19b10000-e8f2-537e-4f6c-d104768a1214';
-var ledCharacteristic = '19b10002-e8f2-537e-4f6c-d104768a1214';
+var buttonCharacteristic = '19b10002-e8f2-537e-4f6c-d104768a1214';
 var LoadCell_Characteristic = '19b10001-e8f2-537e-4f6c-d104768a1214'; 
+
+var Calib_Command   = 0;
+var Hold_Command    = 1;
+var Unhold_Command  = 2;
+
 
 var bleServer;
 var bleServiceFound;
 var sensorCharacteristicFound;
 
 var getWeighingResults = 0; //Biến lưu giá trị cân theo gram
+var oldWeightResults = 1; // Biến lưu giá trị cân cũ theo gram
 var Circular_Progress_Bar_Val = 0; // Biến lưu giá trị cho biểu đồ tròn
 
 received_weight_value.innerHTML = getWeighingResults + " kg";
-document.getElementById("price").innerHTML = "Giá: " + getWeighingResults + "k";
+document.getElementById("price").innerHTML = "Giá: " + getWeighingResults + " VND";
 
 // Nút nhấn kết nối BLE
 connectButton.addEventListener('click', (event) => {
@@ -39,6 +49,11 @@ connectButton.addEventListener('click', (event) => {
 
 // Nút nhất ngắt kết nối BLE
 disconnectButton.addEventListener('click', disconnectDevice);
+
+// Gửi bản tin thực hiện chức năng của nút nhấn
+Calib_Button.addEventListener('click', () => writeOnCharacteristic(Calib_Command));
+Hold_Button.addEventListener('click', () => writeOnCharacteristic(Hold_Command));
+Unhold_Button.addEventListener('click', () => writeOnCharacteristic(Unhold_Command));
 
 // Kiểm tra Bluetooth đã có chưa
 function isWebBluetoothEnabled() {
@@ -83,12 +98,6 @@ function connectToDevice(){
         console.log("Notifications Started.");
         return characteristic.readValue();
     })
-    .then(value => {
-        console.log("Read value: ", value);
-        const decodedValue = new TextDecoder().decode(value);
-        console.log("Decoded value: ", decodedValue);
-        received_weight_value.innerHTML = decodedValue;
-    })
     .catch(error => {
         console.error('Connection failed!', error);
     });
@@ -105,9 +114,16 @@ function onDisconnected(event){
 // Hiển thị giá trị cân nặng
 function Handle_Weight_Change(event){
     getWeighingResults = new TextDecoder().decode(event.target.value);
-    console.log("Characteristic value changed: ", getWeighingResults);
-    if (getWeighingResults >= 0) Circular_Progress_Bar_Val = getWeighingResults;
-    Show_Weight();
+    
+    console.log("Characteristic value changed: ", Number(getWeighingResults));
+
+    if(getWeighingResults != oldWeightResults)
+    {
+        oldWeightResults = getWeighingResults;
+        Circular_Progress_Bar_Val = Number(getWeighingResults);
+        Show_Weight();
+    }
+    
 }
 
 // Ngắt kết nối với Bluetooth
@@ -139,26 +155,65 @@ function disconnectDevice(){
     }
 }
 
-// Tính toán giá tiền của món hàng
+// nút nhấn gửi bản tin về ESP32 
+function writeOnCharacteristic(value){
+    if (bleServer && bleServer.connected) {
+        bleServiceFound.getCharacteristic(buttonCharacteristic)
+        .then(characteristic => {
+            console.log("Found the LED characteristic: ", characteristic.uuid);
+            const data = new Uint8Array([value]);
+            return characteristic.writeValue(data);
+        })
+        .then(() => {
+            console.log("Value written to Button characteristic:", value);
+        })
+        .catch(error => {
+            console.error("Error writing to the button characteristic: ", error);
+        });
+    } else {
+        console.error ("Bluetooth is not connected. Cannot write to characteristic.")
+        window.alert("Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!")
+    }
+}
+
+//tính tiền món hàng
 function calculatePrice() {
     var x = document.getElementById("goods");
     var i = x.selectedIndex;
     var weightInKg = getWeighingResults / 1000;  // Convert grams to kilograms
     var pricePerKg;
-  
-    if (x.options[i].value === "pork") {
-      pricePerKg = 50;  // 50k per 1000g for pork
-    } else if (x.options[i].value === "vegetables") {
-      pricePerKg = 20;  // 20k per 1000g for vegetables
-    } else if (x.options[i].value === "fruit") {
-      pricePerKg = 30;  // 30k per 1000g for fruit
+    var imgSrc;
+
+    // Determine price and image based on selected goods
+    if (x.options[i].value === "none") {
+        pricePerKg = 0;  // 50k per 1000g for pork
     }
-  
+    else if (x.options[i].value === "pork") {
+        pricePerKg = 50000;  // 50k per 1000g for pork or 50 VND per 1g
+        imgSrc = "image/pork.jpg"; // Update with the actual path of the pork image
+        // Update the image
+        document.getElementById("goodsImage").src = imgSrc;
+    } else if (x.options[i].value === "vegetables") {
+        pricePerKg = 20000;  // 20k per 1000g for vegetables
+        imgSrc = "image/vegetables.jpg"; // Update with the actual path of the vegetables image
+        // Update the image
+        document.getElementById("goodsImage").src = imgSrc;
+    } else if (x.options[i].value === "fruit") {
+        pricePerKg = 30000;  // 30k per 1000g for fruit
+        imgSrc = "image/fruit.jpg"; // Update with the actual path of the fruit image
+        // Update the image
+        document.getElementById("goodsImage").src = imgSrc;
+    }
+
     var totalPrice = weightInKg * pricePerKg;
-    totalPrice = totalPrice.toFixed(2); // Round to two decimal places
-    document.getElementById("price").innerHTML = "Giá: " + totalPrice + "k";
-  }
-  
+    // totalPrice = totalPrice.toFixed(3); // Round to two decimal places
+    if(totalPrice < 0) totalPrice = 0;
+    
+    document.getElementById("price").innerHTML = "Giá: " + Math.round(totalPrice) + " VND";
+
+    
+}
+
 function Show_Weight() {
     var x = document.getElementById("units");
     var i = x.selectedIndex;
@@ -167,12 +222,13 @@ function Show_Weight() {
     if (x.options[i].text == "kg") {
       var kg_unit = getWeighingResults / 1000;
       kg_unit = kg_unit.toFixed(3);
+    //   console.log("kg_unit: ",kg_unit);
       document.getElementById("weight_value_label").innerHTML = kg_unit + " kg";
     }
   
     calculatePrice();  // Call the price calculation function
-  }
-    
+}
+
 // Hiển thị giá trị cân trên biểu đồ tròn
 // Displays the weighing value and displays a circular progress bar.
 var canvas = document.getElementById('myCanvas');
@@ -185,9 +241,11 @@ var diff;
 var cnt = 0;
 var bar=setInterval(progressBar,10);
 function progressBar(){
-    var Circular_Progress_Bar_Val_Rslt = map(Circular_Progress_Bar_Val,0,5000,0,100);
-    Circular_Progress_Bar_Val_Rslt = Math.round(Circular_Progress_Bar_Val_Rslt);
-    diff=(cnt/100)*Math.PI*2;
+    if(Circular_Progress_Bar_Val >= 0){
+        var Circular_Progress_Bar_Val_Rslt = map(Circular_Progress_Bar_Val,0,5000,0,100);
+        Circular_Progress_Bar_Val_Rslt = Math.round(Circular_Progress_Bar_Val_Rslt);
+        diff=(cnt/100)*Math.PI*2; 
+    }
     context.clearRect(0,0,400,200);
     context.beginPath();
     context.arc(cw,ch,80,0,2*Math.PI,false);
@@ -205,7 +263,7 @@ function progressBar(){
     context.arc(cw,ch,80,start,diff+start,false);
     context.stroke();
     context.fillStyle='#8C7965';
-    context.fillText(getWeighingResults + ' g',cw,ch+10);
+    context.fillText(Circular_Progress_Bar_Val + ' g',cw,ch+10);
     
     if(cnt<Circular_Progress_Bar_Val_Rslt) {
         cnt++;
