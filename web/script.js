@@ -1,14 +1,3 @@
-/*
-    Web chỉnh lại phần box kết nối BLE sao cho nó to ra
-    Nút nhấn chỉnh cho to hơn và chữ dễ nhìn hơn
-    Có thể thêm background cho màu sao cho dễ nhìn
-    Phần hàng hoá hiển thị thêm ảnh và giá tiền của 1 cân 
-    Web bổ sung thêm 2 nút nhấn là Hold và unhold giá trị của cân
-    Nút nhấn gửi dữ liệu xuống ESP32 thông qua BLE để thực hiện các chức năng
-    VD: nút nhấn hiệu chuẩn thì nhấn trên web thì esp32 sẽ nhận được bản tin và sẽ hiệu chuẩn cân
-        nút nhấn hold, unhold thì dùng để giữ giá trị và bỏ giữ giá trị
-*/
-// BLE-related functionality
 // Cài đặt các biến và tham số
 const connectButton = document.getElementById('connectBleButton');
 const disconnectButton = document.getElementById('disconnectBleButton');
@@ -206,7 +195,6 @@ function calculatePrice() {
     }
 
     var totalPrice = weightInKg * pricePerKg;
-    // totalPrice = totalPrice.toFixed(3); // Round to two decimal places
     if(totalPrice < 0) totalPrice = 0;
     
     document.getElementById("price").innerHTML = "Giá: " + Math.round(totalPrice) + " VND";
@@ -222,15 +210,13 @@ function Show_Weight() {
     if (x.options[i].text == "kg") {
       var kg_unit = getWeighingResults / 1000;
       kg_unit = kg_unit.toFixed(3);
-    //   console.log("kg_unit: ",kg_unit);
       document.getElementById("weight_value_label").innerHTML = kg_unit + " kg";
     }
   
-    calculatePrice();  // Call the price calculation function
+    calculatePrice();  // Gọi hàm tính giá tiền
 }
 
 // Hiển thị giá trị cân trên biểu đồ tròn
-// Displays the weighing value and displays a circular progress bar.
 var canvas = document.getElementById('myCanvas');
 var context = canvas.getContext('2d');
 var start=4.70;
@@ -274,7 +260,6 @@ function progressBar(){
     }
 }
 
-// Scale from weighed value to Progress bar value.
 function map( x,  in_min,  in_max,  out_min,  out_max){
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
