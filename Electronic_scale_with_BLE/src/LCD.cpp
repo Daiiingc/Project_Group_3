@@ -22,6 +22,12 @@ void Setup_LCD(){
 
 }
 
+void clearRow(int rowToClear)
+{
+  lcd.setCursor(0, rowToClear);
+  lcd.print("                ");  
+}
+
 void LCD_Print_Weight(int weight)
 {
   clearRow(1);
@@ -60,16 +66,10 @@ void LCD_Print_Weight(int weight)
     lcd.setCursor(10,1);
     lcd.print("g");
   } 
-  Serial.print("Weight: ");
-  Serial.print(weight);
-  Serial.println(" gram");
+
 }
 
-void clearRow(int rowToClear)
-{
-  lcd.setCursor(0, rowToClear);
-  lcd.print("                ");  
-}
+
 
 void LCD_Print_Setup()
 {

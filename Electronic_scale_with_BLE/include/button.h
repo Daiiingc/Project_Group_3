@@ -10,5 +10,4 @@ bool is_print();
 void Change_Calib_Flag();
 void Change_Hold_Flag();
 
-
 #endif

@@ -35,8 +35,8 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     std::string value = pButton_Characteristic->getValue();
     if(value.length() > 0) {
       Serial.print("Characteristic event, written: ");
-      Serial.println(static_cast<int>(value[0])); 
-	  int receivedValue = static_cast<int>(value[0]);
+      int receivedValue = static_cast<int>(value[0]);
+      Serial.println(receivedValue); 
       if(receivedValue == CALIB_COMMAND) {
         Serial.println("HOLDING");
         Change_Calib_Flag();
