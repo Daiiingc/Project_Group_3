@@ -38,7 +38,7 @@ void Set_Timer_Interrupt(){
   timer = timerBegin(0,80,true);
   //khởi tạo hàm xử lý ngắt ngắt cho Timer
   timerAttachInterrupt(timer, &onTimer, true);
-  //khởi tạo thời gian ngắt cho timer là 1s (1000000 us)
+  //khởi tạo thời gian ngắt cho timer là 1ms (1000 us)
   timerAlarmWrite(timer, 1000, true);
   //bắt đầu chạy timer
   timerAlarmEnable(timer);
